@@ -1,6 +1,6 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const Employee = require('../Models/empModel');
+const Employee = require('../Models/Employee');
 const { hashPassword } = require('../Utils/passwordUils');
 
 // MongoDB Connection
@@ -17,15 +17,13 @@ const seedAdmin = async () => {
             return;
         }
 
-        //Hash password
-        const hashedPassword = await hashPassword("aakash@123");
 
         const admin = new Employee({
             name: "Aakash yadav",
-            mobileNumber: '8817978567',
+            mobile: '8817978567',
             email: "aakash@gmail.com",
-            userName: "aakash_45",
-            password: hashedPassword,
+            username: "aakash_45",
+            password: "12345678",
             role: "admin",
             isAdmin: true,
         });

@@ -37,21 +37,28 @@
             padding: 15px;
             border-radius: 5px;
         }
+
+        .error-message {
+            color: red;
+            margin-top: 10px;
+        }
     </style>
 </head>
 
 <body>
     <div class="login-container text-center">
-        <img src="..//../public/images/Big-Tracker.png" alt="Logo" class="mb-3 rounded-circle">
+        <img src="Big-Tracker.png" alt="Logo" class="mb-3 rounded-circle">
         <h2 class="mb-4">Big Tracker</h2>
-        <form action="/login" method="POST" class="w-50">
+        <form id="loginForm" class="w-50">
             <div class="mb-3">
-                <input type="text" name="username" class="form-control" placeholder="Username" required>
+                <input type="text" name="username" id="username" class="form-control" placeholder="Username" required>
             </div>
             <div class="mb-3">
-                <input type="password" name="password" class="form-control" placeholder="Password" required>
+                <input type="password" name="password" id="password" class="form-control" placeholder="Password"
+                    required>
             </div>
             <button type="submit" class="btn btn-success w-100">Log In</button>
+            <p id="error-message" class="error-message"></p>
         </form>
     </div>
     <div class="image-container">
@@ -61,6 +68,37 @@
                     href="#" class="text-white">here</a>.</p>
         </div>
     </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
+
+            errorMessage.textContent = '';
+
+            try {
+                const response = await fetch('/api/user/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert("Login successfully");
+                    window.location.href = '/Admin';
+                } else {
+                    alert(result.data || result.message || 'Invalid login credentials')
+                }
+            } catch (error) {
+                alert("Something went wrong. Please try again.");
+            }
+        });
+    </script>
 </body>
 
 </html>
