@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Profile</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header {
+            background-color: #004a99;
+            color: white;
+            padding: 20px;
+            font-size: 24px;
+        }
+
+        .profile-container {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .profile-container .profile-info {
+            flex: 1;
+            padding: 20px;
+            text-align: left;
+        }
+
+        .profile-container .profile-photo {
+            flex: 0.4;
+            padding: 10px;
+        }
+
+        .profile-container .profile-photo img {
+            width: 100%;
+            border-radius: 10px;
+        }
+
+        .profile-container .profile-info h2 {
+            margin-top: 0;
+            font-size: 28px;
+            color: #333;
+        }
+
+        .profile-container .profile-info p {
+            font-size: 18px;
+            color: #555;
+        }
+
+        .location {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 18px;
+            background-color: #f08;
+            border-radius: 5px;
+            color: #fff;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .profile-container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .profile-container .profile-photo {
+                margin-bottom: 20px;
+            }
+
+            .profile-container .profile-info {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">Doctor Profile</div>
+
+        <div class="profile-container">
+            <div class="profile-info">
+                <h2>
+                    <%= doctor.name %>
+                </h2>
+                <p><strong>Specialization:</strong>
+                    <%= doctor.specialization %>
+                </p>
+                <p><strong>Phone:</strong>
+                    <%= doctor.phone %>
+                </p>
+                <p><strong>Email:</strong>
+                    <%= doctor.email %>
+                </p>
+            </div>
+
+            <div class="profile-photo">
+                <img src="<%= doctor.photoUrl %>" alt="Doctor Photo">
+            </div>
+        </div>
+
+        <div class="location">
+            <p><strong>Starting Location:</strong>
+                <%= doctor.startingLocation %>
+            </p>
+        </div>
+    </div>
+</body>
+
+</html>

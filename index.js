@@ -9,6 +9,7 @@ const routes = require('./Routes/index.Routes');
 const { errorHandler } = require('./Middlewares/errorHandler');
 const Employee = require('./Models/Employee');
 const { authorize } = require('./Middlewares/authenticate');
+const EmployeeTracking = require('./Models/EmployeeTracking');
 
 // Middlewares
 app.use(express.json());
@@ -24,7 +25,7 @@ app.set('view engine', 'ejs');
 connectDB();
 
 // Route to Render the Admin Dashboard
-app.get("/admin",authorize(["admin"]), async(req, res) => {
+app.get("/admin", authorize(["admin"]), async (req, res) => {
     const users = await Employee.find({ isAdmin: false, isDisable: false });
     res.render("Admin/home", {
         users: users,

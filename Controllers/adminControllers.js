@@ -1,16 +1,16 @@
 const { generateToken } = require("../Middlewares/authenticate");
 const Employee = require("../Models/Employee");
+const EmployeeTracking = require("../Models/EmployeeTracking");
 const { comparePassword } = require("../Utils/passwordUils");
 
-const addEmployee = async(req, res) => {
+const addEmployee = async (req, res) => {
     try {
-        console.log(req.body);
         const { name, mobile, email, username, password } = req.body;
-        
+
         const existsUser = await Employee.findOne({ email });
 
         if (existsUser) {
-            return res.status(400).json({message:"Email is already register. Please log in."})
+            return res.status(400).json({ message: "Email is already register. Please log in." })
         }
 
         const newUser = {
@@ -32,26 +32,24 @@ const addEmployee = async(req, res) => {
 
 const login = async (req, res) => {
     try {
-        console.log(req.body);
         const { username, password } = req.body;
-        
-        const user = await Employee.findOne({ username ,isDisable:false});
+
+        const user = await Employee.findOne({ username, isDisable: false });
 
         if (!user) {
-            return res.status(404).json({message: "Invailid username. Enter valid username."})
+            return res.status(404).json({ message: "Invailid username. Enter valid username." })
         }
 
         const isMatch = await comparePassword(password, user.password);
-        console.log("isMatch:- ",isMatch);
-        
+
         if (!isMatch) {
             return res.status(404).json({ message: "Invailid password. Enter valid username." });
         }
 
-        const token = generateToken(user, res);
+        generateToken(user, res);
         req.user = user;
 
-        res.status(200).json({ message: "Login successfully!" });
+        res.status(200).json(user);
     } catch (error) {
         console.log("Error in login:- ", error.message);
         return res.status(500).json({ message: "Something went wrong. Please try again later." });
@@ -60,11 +58,9 @@ const login = async (req, res) => {
 
 const deleteEmployee = async (req, res) => {
     try {
-        console.log("Request Params:", req.params);
         const empId = req.params.id;
 
         const employee = await Employee.findOne({ _id: empId });
-        console.log("Employee Found:", employee);
 
         if (!employee) {
             return res.status(404).json({ message: "Employee not found!" });
@@ -81,6 +77,37 @@ const deleteEmployee = async (req, res) => {
     }
 };
 
+const getVisits = async (req, res) => {
+    try {
+        const { username } = req.query;  // Get the username from the query parameters
+
+        if (!username) {
+            return res.status(400).json({ error: 'Username is required' });
+        }
+
+        const user = await Employee.findOne({ username });
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Fetch the visits using the username and populate the 'employeeId' field
+        const visits = await EmployeeTracking.findOne({ employeeId: user._id }).populate('visits');
+
+        console.log(visits);
+
+        if (!visits) {
+            return res.status(404).json({ error: 'No visits found for this username' });
+        }
+
+        return res.json(visits);
+    } catch (error) {
+        console.error("Error in getVisits:- ", error.message);
+        res.status(500).json({ message: "Something went wrong. Try again later." });
+    }
+}
+
+
 // Logout
 const logout = async (req, res) => {
     try {
@@ -88,11 +115,11 @@ const logout = async (req, res) => {
         res.clearCookie("authToken");
 
         // Redirect to the login page or send a response
-        res.redirect("/api/user/login");
+        res.redirect("/api/admin/login");
     } catch (error) {
         console.error("Logout Error:", error.message);
         res.status(500).json({ message: "Something went wrong. Try again later." });
     }
 };
 
-module.exports = { addEmployee ,login,deleteEmployee,logout};
+module.exports = { addEmployee, login, deleteEmployee, getVisits, logout };

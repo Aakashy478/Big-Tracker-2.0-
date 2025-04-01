@@ -171,10 +171,10 @@
         <h2>BigTracker</h2>
         <ul>
             <% users.forEach(user=> { %>
-                <li onclick="selectEmployee('<%= user.name %>', '<%= user.mobile %>')">
+                <li onclick="selectEmployee('<%= user.username %>','<%= user.name %>', '<%= user.mobile %>')">
                     <img src="Employee.png" alt="User" class="btn">
                     <span>
-                        <%= user.name %>
+                        <%= user.username %>
                     </span>
                     <button class="delete-btn" onclick="deleteEmployee('<%= user._id %>')">Delete</button>
                 </li>
@@ -190,7 +190,7 @@
                 <strong>Visit Name:</strong> <span id="visitName">Select a Visit</span>
             </div>
             <div class="btn-group">
-                <button class="add-btn" onclick="window.location.href='/api/user/register'">Add Employee</button>
+                <button class="add-btn" onclick="window.location.href='/api/admin/register'">Add Employee</button>
                 <button class="logout-btn" onclick="logoutUser()">Logout</button>
 
             </div>
@@ -207,7 +207,7 @@
     </div>
 
     <script>
-        async function selectEmployee(name, mobile) {
+        async function selectEmployee(username,name, mobile) {
             document.getElementById("employeeName").innerText = name;
             document.getElementById("mobileNumber").innerText = mobile;
 
@@ -215,9 +215,10 @@
             leftBox.innerHTML = "<p>Loading visits...</p>";
 
             try {
-                const response = await fetch(`/api/user/getVisits?name=${encodeURIComponent(name)}`);
+                const response = await fetch(`/api/admin/getVisits?username=${encodeURIComponent(username)}`);
                 const visits = await response.json();
-
+                console.log(visits);
+                
                 if (!visits.length) {
                     leftBox.innerHTML = "<p>No Visits Available</p>";
                     return;
@@ -258,7 +259,7 @@
             }
 
             try {
-                const response = await fetch(`/api/user/deleteEmployee/${employeeId}`, {
+                const response = await fetch(`/api/admin/deleteEmployee/${employeeId}`, {
                     method: "DELETE",
                     headers: {
                         "Content-Type": "application/json"
@@ -287,7 +288,7 @@
         // Logout Admin
         async function logoutUser() {
             try {
-                const response = await fetch('/api/user/logout', {
+                const response = await fetch('/api/admin/logout', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' }
                 });
@@ -295,7 +296,7 @@
                 console.log(response);
                 
                 if (response.ok) {
-                    window.location.href = '/api/user/login';
+                    window.location.href = '/api/admin/login';
                 } else {
                     alert('Logout failed. Please try again.');
                 }
