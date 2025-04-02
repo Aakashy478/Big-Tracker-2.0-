@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Big Tracker</title>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <title>Big Tracker</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -136,7 +136,7 @@
             }
         }
 
-        .logo img{
+        .logo img {
             border: 2px solid black;
             border-radius: 50%;
         }
@@ -146,7 +146,7 @@
 <body>
     <div class="header">
         <div class="logo" style="display: flex; align-items: center;">
-            <img src="/Big-Tracker.png" alt="Logo"> <!-- Replace with actual logo URL -->
+            <img src="/Big-Tracker.png" alt="Logo">
             <div>Big Tracker</div>
         </div>
         <div>
@@ -157,131 +157,314 @@
 
     <div class="container">
         <div class="button-container">
-            <button class="button" onclick="handleCheckIn()">Check-In</button>
-            <button class="button"
-                onclick="fetch('/api/employee/check-out', { method: 'POST' }).then(() => alert('Check-Out Successful!')).catch(() => alert('Error during Check-Out.'))">Check-Out</button>
+            <button class="button" id="checkInButton">Check-In</button>
+            <button class="button" id="checkOutButton">Check-Out</button>
         </div>
 
-        
         <div id="timer" class="timer">
             <span id="timerText">00:00:00</span>
         </div>
-        
+
         <p>Version: 1.19</p>
-        <!-- Start Visit Button -->
+
         <div class="start-visit-container">
-            <button class="start-visit-button" onclick="startVisit()">Start Visit</button>
+            <button class="start-visit-button" id="startVisitButton">Start Visit</button>
         </div>
     </div>
+</body>
+<div id="responseContainer"></div>
+<script>
+    let timerElement = document.getElementById("timerText");
+    let timerInterval;
 
-    <script>
+    // Check if the timer was running before (stored flag)
+    let timerRunning = localStorage.getItem("timerRunning") === "true";
+    let timeElapsed = localStorage.getItem("timeElapsed") ? parseInt(localStorage.getItem("timeElapsed")) : 0;
 
-        // Function to start the visit (trigger API)
-        async function startVisit() {
-            try {
-                const response = await fetch('/api/employee/startVisit', { method: 'GET' });
-                if (response.ok) {
-                    alert('Visit Started!');
-                    // You can update any UI elements here, like showing the visit timer or changing button text
-                } else {
-                    alert('Error starting visit.');
-                }
-            } catch (error) {
-                alert('Error during Start Visit.');
-            }
+    // Function to update timer display
+    function updateTimerDisplay() {
+        let hours = Math.floor(timeElapsed / 3600);
+        let minutes = Math.floor((timeElapsed % 3600) / 60);
+        let seconds = timeElapsed % 60;
+
+        let formattedTime =
+            String(hours).padStart(2, "0") + ":" +
+            String(minutes).padStart(2, "0") + ":" +
+            String(seconds).padStart(2, "0");
+
+        timerElement.textContent = formattedTime;
+    }
+
+    // Function to start the timer
+    function startTimer() {
+        if (timerInterval) return; // Prevent multiple intervals
+
+        timerRunning = true;
+        localStorage.setItem("timerRunning", "true");
+
+        updateTimerDisplay(); // Initial display
+
+        timerInterval = setInterval(function () {
+            timeElapsed++; // Increment time
+            localStorage.setItem("timeElapsed", timeElapsed); // Store updated time
+            updateTimerDisplay();
+        }, 1000);
+    }
+
+    // Function to stop and reset the timer
+    function stopTimer() {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        timerRunning = false;
+        localStorage.removeItem("timerRunning");
+        localStorage.removeItem("timeElapsed");
+    }
+
+    // Function to reset the timer to 00:00:00
+    function resetTimer() {
+        stopTimer();
+        timeElapsed = 0; // Reset time
+        localStorage.setItem("timeElapsed", timeElapsed); // Store reset time
+        updateTimerDisplay();
+    }
+
+    // If the user was checked in before refresh, restart the timer
+    if (timerRunning) {
+        startTimer();
+    }
+
+    // Event listener for Check-In (Start Timer)
+    document.getElementById("checkInButton").addEventListener("click", function () {
+        if (!timerRunning) {
+            startTimer();
         }
+    });
 
-        function handleCheckIn() {
-            startTimer(); // Start the timer function
-            window.location.href = '/api/employee/check-in';  // Redirect to check-in API
-        }
+    // Event listener for Check-Out (Stop Timer)
+    document.getElementById("checkOutButton").addEventListener("click", function () {
+        stopTimer();
+        alert("Checkout completed. Timer stopped!");
+        resetTimer(); // Reset timer after checkout
+    });
 
-        $(document).ready(function () {
-            // Sync button click
-            $("#syncBtn").click(function () {
-                $.ajax({
-                    url: '/api/employee/syncData',
-                    method: 'POST',
-                    success: function (response) {
-                        alert('Data synced successfully!');
-                    },
-                    error: function () {
-                        alert('Error syncing data.');
-                    }
-                });
-            });
 
-            // Log out button click
-            $("#logoutBtn").click(function () {
-                $.ajax({
-                    url: '/api/admin/logout',
-                    method: 'POST',
-                    success: function (response) {
-                        alert('Logged out successfully!');
-                        // Redirect to login page or refresh the page
-                        window.location.href = '/api/admin/login'; // Example: redirect to login page
-                    },
-                    error: function () {
-                        alert('Error logging out.');
-                    }
-                });
-            });
-        });
-    </script>
-
-    <script>
-        function checkOut() {
+    // Check-in AJX
+    $(document).ready(function () {
+        $("#checkInButton").click(function () {
             $.ajax({
-                url: '/api/employee/check-out',
-                method: 'POST',
-                success: function (data) {
-                    alert('Checked out successfully!');
-                    console.log('Check-Out Response:', data);
+                url: "/api/user/check-in", // Your check-in route
+                type: "GET",
+                dataType: "html", // Expecting an HTML response
+                success: function (response, status, xhr) {
+                    console.log("HTML Response: ", response);
+                    console.log(xhr);
+
+                    // Get the response status code
+                    let statusCode = xhr.status;
+                    console.log("Status Code:", statusCode);
+
+                    if (statusCode === 200) {
+                        // Start the timer automatically when the page loads
+                        startTimer();
+                        // Success - Display the HTML response in a div
+                        $('.header').hide();
+                        $('.container').hide();
+
+                        $("#responseContainer").html(response).css({
+                            "display": "flex",
+                            "justify-content": "center",
+                            "align-items": "center",
+                            "position": "fixed", // Fixed for better positioning on all screens
+                            "top": "50%",
+                            "left": "50%",
+                            "transform": "translate(-50%, -50%)",
+                            "background": "white",
+                            "padding": "20px",
+                            "border-radius": "10px",
+                            "box-shadow": "0px 4px 15px rgba(0, 0, 0, 0.3)", // Stronger shadow for visibility
+                            "opacity": "10", // Ensuring full visibility
+                            "visibility": "visible",
+                            "max-width": "90%", // Responsive width
+                            "width": "400px", // Default width
+                            "text-align": "center"
+                        }).hide().fadeIn(500);
+
+                    } else if (statusCode === 401) {
+                        alert("You must be logged in to check in.");
+                        window.location.href = "/api/admin/login";
+                    } else if (statusCode === 500) {
+                        alert("Server error. Please try again later.");
+                    } else {
+                        alert("Unexpected response received.");
+                    }
                 },
                 error: function (xhr, status, error) {
-                    console.error('Check-Out Error:', error);
-                    alert('Check-Out failed!');
+                    console.log("Error: ", xhr);
+
+                    if (xhr.status === 400) {
+                        alert("Invalid check-in attempt.");
+                    } else if (xhr.status === 401) {
+                        alert("You need to log in first.");
+                        window.location.href = "/api/admin/login";
+                    } else if (xhr.status === 500) {
+                        alert("Something went wrong. Please try again.");
+                    } else {
+                        alert("An unexpected error occurred.");
+                    }
                 }
             });
-        }
-
-        let timerInterval;
-
-        function startTimer() {
-            if (timerInterval) return; // Prevent multiple timers
-
-            let timer = $("#timerText");
-            let startTime = localStorage.getItem("startTime");
-
-            if (!startTime) {
-                startTime = Date.now(); // Save current timestamp
-                localStorage.setItem("startTime", startTime);
-            }
-
-            function updateTimer() {
-                let elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-                let hrs = String(Math.floor(elapsedTime / 3600)).padStart(2, '0');
-                let mins = String(Math.floor((elapsedTime % 3600) / 60)).padStart(2, '0');
-                let secs = String(elapsedTime % 60).padStart(2, '0');
-                timer.text(`${hrs}:${mins}:${secs}`);
-            }
-
-            updateTimer(); // Update immediately
-            timerInterval = setInterval(updateTimer, 1000);
-        }
-
-        function resetTimer() {
-            clearInterval(timerInterval);
-            localStorage.removeItem("startTime"); // Clear stored time
-            $("#timerText").text("00:00:00");
-            timerInterval = null;
-        }
-
-        $(document).ready(function () {
-            if (localStorage.getItem("startTime")) {
-                startTimer(); // Resume timer on page load
-            }
         });
-    </script>
+    });
+
+    // Start Visit
+    $(document).ready(function () {
+        $("#startVisitButton").click(function () {
+            $.ajax({
+                url: "/api/user/startVisit",
+                type: "GET",
+                contentType: "application/json",
+                dataType: "html",
+                success: function (response, status, xhr) {
+                    
+                    if (xhr.status === 200) {
+                        $('.header').hide();
+                        $('.container').hide();
+
+                        $("#responseContainer").html(response).css({
+                            "display": "flex",
+                            "justify-content": "center",
+                            "align-items": "center",
+                            "position": "fixed", // Fixed for better positioning on all screens
+                            "top": "50%",
+                            "left": "50%",
+                            "transform": "translate(-50%, -50%)",
+                            "background": "white",
+                            "padding": "20px",
+                            "border-radius": "10px",
+                            "box-shadow": "0px 4px 15px rgba(0, 0, 0, 0.3)", // Stronger shadow for visibility
+                            "opacity": "10", // Ensuring full visibility
+                            "visibility": "visible",
+                            "max-width": "90%", // Responsive width
+                            "width": "400px", // Default width
+                            "text-align": "center"
+                        }).hide().fadeIn(500);
+                    } else {
+                        alert(response.message || "Something went wrong.");
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.log("Error: ", xhr);
+
+                    if (xhr.status === 404) {
+                        alert("Employee has not checked in!");
+                    } else if (xhr.status === 401) {
+                        alert("Session expired. Please log in again.");
+                        window.location.href = "/login";
+                    } else if (xhr.status === 500) {
+                        alert("Server error! Please try again.");
+                    } else {
+                        alert("An unexpected error occurred.");
+                    }
+                }
+            });
+        });
+    });
+
+
+
+    // Check-Out AJAX
+    $(document).ready(function () {
+        $("#checkOutButton").click(function () {
+            $.ajax({
+                url: "/api/user/check-out", // Your checkout route
+                type: "POST",
+                dataType: "json",
+                success: function (response, status, xhr) {
+                    console.log(response);
+
+                    // Get the response status code
+                    let statusCode = xhr.status;
+
+                    if (statusCode === 200) {
+                        alert("Checkout successful!");
+                        window.location.href = "/order-confirmation"; // Redirect to confirmation page
+                    } else if (statusCode === 400) {
+                        alert("Invalid request: " + response.message);
+                    } else if (statusCode === 401) {
+                        alert("You must be logged in to check out.");
+                        window.location.href = "/login"; // Redirect to login page
+                    } else if (statusCode === 403) {
+                        alert("You are not authorized to perform this action.");
+                    } else if (statusCode === 500) {
+                        alert("Server error. Please try again later.");
+                    } else {
+                        alert("Checkout failed: " + response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.log("Error: ", xhr);
+
+                    let statusCode = xhr.status;
+
+                    if (statusCode === 400) {
+                        alert("Invalid checkout request.");
+                    } else if (statusCode === 401) {
+                        alert("You need to log in first.");
+                        window.location.href = "/login";
+                    } else if (statusCode === 500) {
+                        alert("Something went wrong. Please try again.");
+                    } else {
+                        alert("An unexpected error occurred.");
+                    }
+                }
+            });
+        });
+    });
+
+
+    // Complete Logout
+    $(document).ready(function () {
+        $("#logoutBtn").click(function () {
+            $.ajax({
+                url: "/api/admin/logout", // Your logout route
+                type: "POST",
+                dataType: "json",
+                success: function (response, status, xhr) {
+                    console.log(response);
+
+                    // Get the status code from the response
+                    let statusCode = xhr.status;
+
+                    if (statusCode === 200) {
+                        alert("Logged out successfully!");
+                        window.location.href = "/api/admin/login"; // Redirect to login page
+                    } else if (statusCode === 401) {
+                        alert("Session expired! Redirecting to login.");
+                        window.location.href = "/api/admin/login";
+                    } else if (statusCode === 500) {
+                        alert("Server error. Please try again later.");
+                    } else {
+                        alert("Logout failed: " + response.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.log("Error: ", xhr);
+
+                    let statusCode = xhr.status;
+
+                    if (statusCode === 401) {
+                        alert("Unauthorized! Redirecting to login.");
+                        window.location.href = "/api/admin/login";
+                    } else if (statusCode === 500) {
+                        alert("Server error! Please try again.");
+                    } else {
+                        alert("An unexpected error occurred.");
+                    }
+                }
+            });
+        });
+    });
+
+</script>
 
 </html>

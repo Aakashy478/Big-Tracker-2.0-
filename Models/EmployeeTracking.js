@@ -4,32 +4,39 @@ const moment = require("moment");
 const discussionSchema = new mongoose.Schema({
     startTime: { type: Date, required: true },
     endTime: { type: Date, required: true },
+    note: { type: String, required: false },
     audioFileUrl: { type: String, required: false } // Store audio discussion link
 });
 
 const visitSchema = new mongoose.Schema({
-    hospitalName: { type: String, required: true },
-    doctorName: { type: String, required: true },
-    startLocation: { type: String, required: true },
-    endLocation: { type: String, required: true },
-    visitStartTime: { type: Date, required: true }, // Start time of the visit
-    visitEndTime: { type: Date, required: true },   // End time of the visit
-    note: { type: String, required: false },
+    hospitalName: { type: String, default: null },
+    hospitalImage: { type: String, default: null }, // Image URL or file path
+    doctorName: { type: String, default: null },
+    doctorImage: { type: String, default: null }, // Image URL or file path
+    startLocation: { type: String, default: null },
+    endLocation: { type: String, default: null },
+    visitStartTime: {
+        type: Date,
+        required: true,
+        default: () => moment().toDate() // Stores the full date-time
+    },
+    visitEndTime: { type: Date, default: null }, // Will be set manually when visit ends
     discussions: [discussionSchema] // Multiple discussions per visit
 });
+
 
 const employeeTrackingSchema = new mongoose.Schema({
     employeeId: { type: String, ref: "Employee", required: true }, // Reference Employee
     checkInTime: {
-        type: String,
+        type: Date,
         required: true,
-        default: () => moment().format("hh:mm A") // Correct format for 12-hour clock with AM/PM
+        default: () => moment().toDate() // Stores both date and time
     },
-    checkInPlace: { type: String ,default:""},
+    checkInPlace: { type: String, default: "" },
     visits: [visitSchema], // Array of visits
     checkOutTime: {
-        type: String,
-        default: null 
+        type: Date,
+        default: null
     }
 });
 

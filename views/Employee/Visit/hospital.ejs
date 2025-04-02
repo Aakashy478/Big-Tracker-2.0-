@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doctor Details Form</title>
+    <title>Hospital Details Form</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -57,18 +57,17 @@
 
 <body>
     <div class="form-container">
-        <h2>Doctor Details</h2>
+        <h2>Hospital Details</h2>
         <form id="form" method="post" enctype="multipart/form-data">
-            <label for="name">Doctor/Clinic Name:</label>
-            <input type="text" id="name" name="doctorName" required>
+            <label for="name">Hospital Name:</label>
+            <input type="text" id="name" name="hospitalName" required>
 
             <label for="photo">Upload Photo:</label>
-            <input type="file" id="photo" name="doctorImage" required>
+            <input type="file" id="photo" name="hospitalImage" required>
 
             <button type="submit">Submit</button>
         </form>
     </div>
-    <div id="responseContainer"></div>
 </body>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -79,43 +78,26 @@
             let formData = new FormData(this); // Create FormData object
 
             $.ajax({
-                url: "/api/user/visit/doctorDetails", // Replace with your actual backend API endpoint
+                url: "/api/user/visit/hospitalDetails", // Replace with your actual backend API endpoint
                 type: "POST",
                 data: formData,
                 contentType: false,  // Prevent jQuery from setting contentType
                 processData: false,  // Prevent jQuery from processing data
                 success: function (response, status, xhr) {
-                    console.log(xhr);
-                    
                     console.log("Response:", response);
 
                     // Check status code and show separate alerts
                     if (xhr.status === 200) {
-                        alert(response.message || "Doctor details submitted successfully!");
-                        $("#responseContainer").html(response).css({
-                            "display": "flex",
-                            "justify-content": "center",
-                            "align-items": "center",
-                            "position": "fixed",
-                            "top": "50%",
-                            "left": "50%",
-                            "transform": "translate(-50%, -50%)",
-                            "background": "white",
-                            "padding": "20px",
-                            "border-radius": "10px",
-                            "box-shadow": "0px 4px 15px rgba(0, 0, 0, 0.3)",
-                            "opacity": "1",
-                            "visibility": "visible",
-                            "max-width": "90%",
-                            "width": "400px",
-                            "text-align": "center"
-                        }).hide().fadeIn(500);
+                        alert(response.message || "Hospital details submitted successfully!");
+                        window.location.href = '/api/user/home';
                     } else if (xhr.status === 201) {
-                        alert(response.message || "Doctor details created successfully!");
+                        alert(response.message || "Hospital details created successfully!");
                     } else if (xhr.status === 202) {
-                        alert(response.message || "Doctor details request accepted!");
+                        alert(response.message || "Hospital details request accepted!");
                     } else if (xhr.status === 204) {
-                        alert(response.message || "Submission successful, but no content returned.");
+                        alert("Submission successful, but no content returned.");
+                    } else {
+                        alert(response.message || "Success!");
                     }
                 },
                 error: function (xhr) {
@@ -135,14 +117,12 @@
                     } else if (xhr.status === 500) {
                         alert(xhr.responseJSON?.message || "Server error. Please try again later.");
                     } else {
-                        alert(xhr.responseJSON?.message || "Error submitting doctor details.");
+                        alert(xhr.responseJSON?.message || "Error submitting hospital details.");
                     }
                 }
             });
         });
     });
 </script>
-
-
 
 </html>

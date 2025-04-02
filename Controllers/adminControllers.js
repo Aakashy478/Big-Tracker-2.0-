@@ -100,7 +100,7 @@ const getVisits = async (req, res) => {
             return res.status(404).json({ error: 'No visits found for this username' });
         }
 
-        return res.json(visits);
+        return res.json(visits.visits);
     } catch (error) {
         console.error("Error in getVisits:- ", error.message);
         res.status(500).json({ message: "Something went wrong. Try again later." });
@@ -114,8 +114,7 @@ const logout = async (req, res) => {
         // Clear the authentication token from cookies
         res.clearCookie("authToken");
 
-        // Redirect to the login page or send a response
-        res.redirect("/api/admin/login");
+        res.status(200).json({ message: "Logout successfully!" });
     } catch (error) {
         console.error("Logout Error:", error.message);
         res.status(500).json({ message: "Something went wrong. Try again later." });
