@@ -2,15 +2,13 @@ const mongoose = require("mongoose");
 const moment = require("moment");
 
 const discussionSchema = new mongoose.Schema({
-    startTime: { type: Date, required: true },
-    endTime: { type: Date, required: true },
-    note: { type: String, required: false },
-    audioFileUrl: { type: String, required: false } // Store audio discussion link
+    startTime: { type: Date, default: moment().toDate() },
+    endTime: { type: Date, default:null },
+    note: { type: String, default:"" },
+    audioFileUrl: { type: String, default:null } // Store audio discussion link
 });
 
 const visitSchema = new mongoose.Schema({
-    hospitalName: { type: String, default: null },
-    hospitalImage: { type: String, default: null }, // Image URL or file path
     doctorName: { type: String, default: null },
     doctorImage: { type: String, default: null }, // Image URL or file path
     startLocation: { type: String, default: null },

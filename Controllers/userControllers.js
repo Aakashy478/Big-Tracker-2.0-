@@ -3,25 +3,28 @@ const EmployeeTracking = require('../Models/EmployeeTracking');
 
 const checkIn = async (req, res) => {
     try {
-        console.log("Inside check-in method: Post");
-
         const { location } = req.body;
         const employeeId = req.user._id;
 
-        const checkIn = await EmployeeTracking.findOne({ employeeId });
-        console.log("checkIn:- ", checkIn);
+        const existingTracking = await EmployeeTracking.findOne({ employeeId, checkOutTime: null });
+        console.log("existingTracking:- ", existingTracking);
 
-        if (checkIn) {
+        if (existingTracking) {
             return res.status(400).json({ success: true, message: "User is already check-in." });
         }
 
-        const newCheckIn = new EmployeeTracking({
+        const newtracking = new EmployeeTracking({
             employeeId,
             checkInPlace: location
         })
 
-        await newCheckIn.save();
-        res.status(200).json({ success: true, message: "Your check-in time start now" })
+        const currentTime = moment().format('hh:mm A');
+
+        await newtracking.save();
+
+        console.log(`Your check-in time ${currentTime} start now`);
+
+        res.status(200).json({ success: true, message: `Your check-in time ${currentTime} start now` })
     } catch (error) {
         console.log("Error in Check-in:- ", error.message);
         return res.status(500).json({ success: false, message: "Somthing went wrong. Please try again later." });
@@ -33,36 +36,41 @@ const checkOut = async (req, res) => {
     try {
         const employeeId = req.user._id;
 
-        //Find the existing check-in or not
         const tracking = await EmployeeTracking.findOne({ employeeId });
 
         if (!tracking) {
-            return res.status(400).json({ message: "User has not ckecked in." });
+            return res.status(400).json({ message: "User has not checked in." });
         }
 
-        if (tracking.checkInTime) {
+        if (tracking.checkOutTime) {
             return res.status(400).json({ message: "User has already checked out." });
         }
 
-        tracking.checkOutTime = moment().format("hh:mm A");
+        const checkOutTime = new Date();
 
-        await tracking.save();
+        await EmployeeTracking.updateOne(
+            { _id: tracking._id },
+            { $set: { checkOutTime } }
+        );
 
-        res.status(200).json({ message: `Yout check-out time ${checkInStatus.checkOutTime} for the day.` });
+        console.log(`Your check-out time is ${checkOutTime} for the day.`);
+
+        res.status(200).json({ message: `Your check-out time is ${checkOutTime} for the day.` });
     } catch (error) {
-        console.log("Error in Check out user:- ", error.message);
-        return res.status(500).json({ message: "Somthing went wrong. Please try again later." });
+        console.error("Error in check-out user:", error.message);
+        return res.status(500).json({ message: "Something went wrong. Please try again later." });
     }
-}
+};
+
 
 const doctorDetails = async (req, res) => {
     try {
         console.log(req.body);
-        
+
         const { doctorName } = req.body;
         const doctorImage = req.file ? req.file.filename : "";
 
-        const tracking = await EmployeeTracking.findOne({ employeeId: req.user._id });
+        const tracking = await EmployeeTracking.findOne({ employeeId: req.user._id, checkOutTime: null });
 
         if (!tracking) {
             return res.status(400).json({ message: "User has not checked in." });
@@ -79,9 +87,9 @@ const doctorDetails = async (req, res) => {
         tracking.visits.push(newVisit);
         await tracking.save();
 
-        
+
         // Render the page and pass data
-        res.status(200).render('Employee/Visit/hospital');
+        res.status(200).json({ message: "Submited doctor details successfully!" });
 
     } catch (error) {
         console.log("Error in Check-in:- ", error.message);
@@ -90,46 +98,49 @@ const doctorDetails = async (req, res) => {
 };
 
 
-// Visit Hospital Details
-const hospitalDetails = async (req, res) => {
+const startDiscussion = async (req, res) => {
     try {
-        console.log(req.body);
-        const { hospitalName } = req.body;
-        const hospitalImage = req.file ? req.file.filename : "";
-
-        const tracking = await EmployeeTracking.findOne({ employeeId: req.user._id });
+        console.log(req.file);
+        const tracking = await EmployeeTracking.findOne({ employeeId: req.user._id, checkOutTime: null });
 
         if (!tracking) {
-            return res.status(400).json({ message: "User has not checked in." })
+            return res.status(400).json({ message: "User has not checked in." });
         }
 
-        // Get the last visit ID (which is the newly added one)
-        const currentVisitId = tracking.visits[tracking.visits.length - 1]._id;
+        if (tracking.visits.length === 0) {
+            return res.status(400).json({ message: "User can first start visit" });
+        }
 
+        const currectVisit = tracking.visits.find(visit => visit.visitEndTime === null);
 
-        const result = await EmployeeTracking.updateOne(
-            {
-                employeeId: req.user._id,
-                "visits._id": currentVisitId  // Find the specific visit by ID
-            },
-            {
-                $set: {
-                    "visits.$.hospitalName": hospitalName,
-                    "visits.$.hospitalImage": hospitalImage
-                }
-            }
-        );
+        console.log("currectVisit:- ", currectVisit);
 
+        const currectDiscussion = currectVisit.discussions.find(discussion => discussion.endTime === null);
 
-        console.log("result:- ",result);
-        
+        console.log("currectDiscussion:- ", currectDiscussion);
 
-        res.status(200).json({ message: "Visit details successfully filled." });
+        currectDiscussion.audioFileUrl = req.file ? req.file.filename : null;
+        currectDiscussion.endTime = moment().toISOString();
+
+        await tracking.save();
+
+        res.status(200).json({ message: "audio sended successfully" });
     } catch (error) {
-        console.log("Error in Check-in:- ", error.message);
-        return res.status(500).json({ message: "Something went wrong. Please try again later." });
+        console.log("Erroor in startDiscussion:- ", error.message);
+        return res.status(500).json({ message: "Somthing went wrong. Please try again later" });
     }
-};
+}
+
+const overDiscussion = async (req, res) => {
+    try {
+        console.log(req.body);
+        
+        res.status(200).json({ message: "Discussion overed successfully!" });
+    } catch (error) {
+        console.log("Erroor in startDiscussion:- ", error.message);
+        return res.status(500).json({ message: "Somthing went wrong. Please try again later" });
+    }
+}
 
 
-module.exports = { checkIn, doctorDetails, hospitalDetails, checkOut };
+module.exports = { checkIn, doctorDetails, checkOut, startDiscussion, overDiscussion };

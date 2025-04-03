@@ -68,7 +68,6 @@
             <button type="submit">Submit</button>
         </form>
     </div>
-    <div id="responseContainer"></div>
 </body>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -86,36 +85,13 @@
                 processData: false,  // Prevent jQuery from processing data
                 success: function (response, status, xhr) {
                     console.log(xhr);
-                    
+
                     console.log("Response:", response);
 
                     // Check status code and show separate alerts
                     if (xhr.status === 200) {
                         alert(response.message || "Doctor details submitted successfully!");
-                        $("#responseContainer").html(response).css({
-                            "display": "flex",
-                            "justify-content": "center",
-                            "align-items": "center",
-                            "position": "fixed",
-                            "top": "50%",
-                            "left": "50%",
-                            "transform": "translate(-50%, -50%)",
-                            "background": "white",
-                            "padding": "20px",
-                            "border-radius": "10px",
-                            "box-shadow": "0px 4px 15px rgba(0, 0, 0, 0.3)",
-                            "opacity": "1",
-                            "visibility": "visible",
-                            "max-width": "90%",
-                            "width": "400px",
-                            "text-align": "center"
-                        }).hide().fadeIn(500);
-                    } else if (xhr.status === 201) {
-                        alert(response.message || "Doctor details created successfully!");
-                    } else if (xhr.status === 202) {
-                        alert(response.message || "Doctor details request accepted!");
-                    } else if (xhr.status === 204) {
-                        alert(response.message || "Submission successful, but no content returned.");
+                        window.location.href = "/api/user/home";
                     }
                 },
                 error: function (xhr) {

@@ -141,6 +141,39 @@
             border-radius: 50%;
         }
     </style>
+    <style>
+        .start-discussion-container {
+            display: inline;
+            justify-content: center;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .discussion-button {
+            background: #004a99;
+            color: white;
+            border: 1px solid #004a99;
+            border-radius: 5px;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            margin: 10px auto;
+            display: inline-block;
+        }
+
+        .discussion-button:hover {
+            background-color: #003366;
+        }
+
+        @media (max-width: 600px) {
+            .discussion-button {
+                width: 100%;
+                max-width: 250px;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -170,9 +203,108 @@
         <div class="start-visit-container">
             <button class="start-visit-button" id="startVisitButton">Start Visit</button>
         </div>
+        <div class="start-discussion-container">
+            <button class="discussion-button" id="startDiscussionButton">Start Discussion</button>
+            <button class="discussion-button" id="pauseDiscussionButton" >Pause
+                Discussion</button>
+            <button class="discussion-button" id="overDiscussionButton">Over Discussion</button>
+        </div>
     </div>
 </body>
 <div id="responseContainer"></div>
+<script>
+    // Start Discussion
+    $(document).ready(function () {
+        $('#startDiscussionButton').click(function () {
+            $.ajax({
+                url: "/api/user/startDiscussion", // Update with your actual route
+                type: "GET", // Or "GET" if needed
+                data: {}, // Include any necessary data
+                success: function (response) {
+                    alert("Discussion started successfully!");
+
+                    $('.header').hide();
+                    $('.container').hide();
+                    resetTimer()
+                    startTimer();
+                    $("#responseContainer").html(response).css({
+                        "display": "flex",
+                        "justify-content": "center",
+                        "align-items": "center",
+                        "position": "fixed", // Fixed for better positioning on all screens
+                        "top": "50%",
+                        "left": "50%",
+                        "transform": "translate(-50%, -50%)",
+                        "background": "white",
+                        "padding": "20px",
+                        "border-radius": "10px",
+                        "box-shadow": "0px 4px 15px rgba(0, 0, 0, 0.3)", // Stronger shadow for visibility
+                        "opacity": "10", // Ensuring full visibility
+                        "visibility": "visible",
+                        "max-width": "90%", // Responsive width
+                        "width": "400px", // Default width
+                        "text-align": "center"
+                    }).hide().fadeIn(500);
+
+                },
+                error: function (xhr, status, error) {
+                    console.log(xhr);
+                    if(xhr.status ===400){
+                        alert(xhr.responseJSON.data||xhr.responseJSON.message|| "Invalid request");
+                        window.location.href = '/api/user/home';
+                    }                    
+                    console.error("Error starting discussion:", error);
+                    alert("Failed to start discussion. Please try again.");
+                }
+
+            });
+
+        });
+    });
+
+    // Over Discussion 
+    $(document).ready(function () {
+            $("#overDiscussionButton").click(function () {
+                $.ajax({
+                    url: "/api/user/overDiscussion", // Replace with your actual endpoint
+                    type: "GET", // Change to "GET" if needed
+                    data: { action: "overDiscussion" }, // Send any necessary data
+                    success: function (response) {
+                        console.log("Success:", response);
+                        // alert("Discussion Over!"); // Modify as needed
+                         $('.header').hide();
+                        $('.container').hide();
+                        resetTimer()
+                        startTimer();
+                        $("#responseContainer").html(response).css({
+                            "display": "flex",
+                            "justify-content": "center",
+                            "align-items": "center",
+                            "position": "fixed", // Fixed for better positioning on all screens
+                            "top": "50%",
+                            "left": "50%",
+                            "transform": "translate(-50%, -50%)",
+                            "background": "white",
+                            "padding": "20px",
+                            "border-radius": "10px",
+                            "box-shadow": "0px 4px 15px rgba(0, 0, 0, 0.3)", // Stronger shadow for visibility
+                            "opacity": "10", // Ensuring full visibility
+                            "visibility": "visible",
+                            "max-width": "90%", // Responsive width
+                            "width": "400px", // Default width
+                            "text-align": "center"
+                        }).hide().fadeIn(500);
+
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error:", error);
+                        alert("Something went wrong!");
+                    }
+                });
+            });
+        });
+
+</script>
 <script>
     let timerElement = document.getElementById("timerText");
     let timerInterval;
@@ -233,21 +365,6 @@
         startTimer();
     }
 
-    // Event listener for Check-In (Start Timer)
-    document.getElementById("checkInButton").addEventListener("click", function () {
-        if (!timerRunning) {
-            startTimer();
-        }
-    });
-
-    // Event listener for Check-Out (Stop Timer)
-    document.getElementById("checkOutButton").addEventListener("click", function () {
-        stopTimer();
-        alert("Checkout completed. Timer stopped!");
-        resetTimer(); // Reset timer after checkout
-    });
-
-
     // Check-in AJX
     $(document).ready(function () {
         $("#checkInButton").click(function () {
@@ -265,11 +382,11 @@
 
                     if (statusCode === 200) {
                         // Start the timer automatically when the page loads
-                        startTimer();
                         // Success - Display the HTML response in a div
                         $('.header').hide();
                         $('.container').hide();
-
+                        resetTimer()
+                        startTimer();
                         $("#responseContainer").html(response).css({
                             "display": "flex",
                             "justify-content": "center",
@@ -300,9 +417,10 @@
                 },
                 error: function (xhr, status, error) {
                     console.log("Error: ", xhr);
+                    const message = JSON.parse(xhr.responseText).message;
 
                     if (xhr.status === 400) {
-                        alert("Invalid check-in attempt.");
+                        alert(message || "Invailid check in");
                     } else if (xhr.status === 401) {
                         alert("You need to log in first.");
                         window.location.href = "/api/admin/login";
@@ -325,7 +443,7 @@
                 contentType: "application/json",
                 dataType: "html",
                 success: function (response, status, xhr) {
-                    
+
                     if (xhr.status === 200) {
                         $('.header').hide();
                         $('.container').hide();
@@ -355,7 +473,11 @@
                 error: function (xhr, status, error) {
                     console.log("Error: ", xhr);
 
-                    if (xhr.status === 404) {
+                    const message = JSON.parse(xhr.responseText).message;
+
+                    if (xhr.status === 400) {
+                        alert(message || "User has already visit in this side!");
+                    } else if (xhr.status === 404) {
                         alert("Employee has not checked in!");
                     } else if (xhr.status === 401) {
                         alert("Session expired. Please log in again.");
@@ -386,17 +508,10 @@
                     let statusCode = xhr.status;
 
                     if (statusCode === 200) {
+                        stopTimer();
+                        resetTimer(); // Reset timer after checkout
                         alert("Checkout successful!");
-                        window.location.href = "/order-confirmation"; // Redirect to confirmation page
-                    } else if (statusCode === 400) {
-                        alert("Invalid request: " + response.message);
-                    } else if (statusCode === 401) {
-                        alert("You must be logged in to check out.");
-                        window.location.href = "/login"; // Redirect to login page
-                    } else if (statusCode === 403) {
-                        alert("You are not authorized to perform this action.");
-                    } else if (statusCode === 500) {
-                        alert("Server error. Please try again later.");
+                        window.location.href = "/api/user/home"; // Redirect to confirmation page
                     } else {
                         alert("Checkout failed: " + response.message);
                     }
@@ -405,9 +520,9 @@
                     console.log("Error: ", xhr);
 
                     let statusCode = xhr.status;
-
+                    const message = xhr.responseJSON.message;
                     if (statusCode === 400) {
-                        alert("Invalid checkout request.");
+                        alert(message || "Invalid checkout request.");
                     } else if (statusCode === 401) {
                         alert("You need to log in first.");
                         window.location.href = "/login";
