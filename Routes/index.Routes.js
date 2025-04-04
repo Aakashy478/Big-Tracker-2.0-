@@ -3,6 +3,6 @@ const adminRoutes = require('./adminRoutes');
 const employeeRoutes = require('./employeeRoutes');
 
 router.use('/admin', adminRoutes);
-router.use('/user', employeeRoutes);
+router.use('/employee', employeeRoutes);
 
 module.exports = router;

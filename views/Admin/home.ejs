@@ -166,13 +166,13 @@
 
 <body>
     <div class="sidebar">
-        <img src="Big-Tracker.png" alt="BigTracker Logo"
+        <img src="/Big-Tracker.png" alt="BigTracker Logo"
             style="width: 50px;height: 50px; border-radius: 50%;display: block;margin: 0 auto 10px;">
         <h2>BigTracker</h2>
         <ul>
             <% users.forEach(user=> { %>
                 <li onclick="selectEmployee('<%= user.username %>','<%= user.name %>', '<%= user.mobile %>')">
-                    <img src="Employee.png" alt="User" class="btn">
+                    <img src="/Employee.png" alt="User" class="btn">
                     <span>
                         <%= user.username %>
                     </span>

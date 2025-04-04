@@ -49,7 +49,7 @@ const login = async (req, res) => {
         generateToken(user, res);
         req.user = user;
 
-        res.status(200).json(user);
+        res.status(200).json({role:user.role});
     } catch (error) {
         console.log("Error in login:- ", error.message);
         return res.status(500).json({ message: "Something went wrong. Please try again later." });

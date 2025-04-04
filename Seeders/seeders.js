@@ -17,7 +17,6 @@ const seedAdmin = async () => {
             return;
         }
 
-
         const admin = new Employee({
             name: "Aakash yadav",
             mobile: '8817978567',

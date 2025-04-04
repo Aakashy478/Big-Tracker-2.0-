@@ -3,43 +3,29 @@ const moment = require("moment");
 
 const discussionSchema = new mongoose.Schema({
     startTime: { type: Date, default: moment().toDate() },
-    endTime: { type: Date, default:null },
-    note: { type: String, default:"" },
-    audioFileUrl: { type: String, default:null } // Store audio discussion link
+    notes: { type: String, default: null },
+    audioFile: { type: String, default: null },
+    endTime: { type: Date, default: null },
 });
 
 const visitSchema = new mongoose.Schema({
     doctorName: { type: String, default: null },
-    doctorImage: { type: String, default: null }, // Image URL or file path
+    doctorImage: { type: String, default: null },
     startLocation: { type: String, default: null },
+    visitStartTime: {type: Date,required: true,default: moment().toDate()},
+    discussions: [discussionSchema],  // Array of discussion
     endLocation: { type: String, default: null },
-    visitStartTime: {
-        type: Date,
-        required: true,
-        default: () => moment().toDate() // Stores the full date-time
-    },
-    visitEndTime: { type: Date, default: null }, // Will be set manually when visit ends
-    discussions: [discussionSchema] // Multiple discussions per visit
+    visitEndTime: { type: Date, default: null },
 });
 
 
 const employeeTrackingSchema = new mongoose.Schema({
-    employeeId: { type: String, ref: "Employee", required: true }, // Reference Employee
-    checkInTime: {
-        type: Date,
-        required: true,
-        default: () => moment().toDate() // Stores both date and time
-    },
+    employeeId: { type: String, ref: "Employee", required: true }, checkInTime: { type: Date, required: true, default: moment().toDate() },
     checkInPlace: { type: String, default: "" },
     visits: [visitSchema], // Array of visits
-    checkOutTime: {
-        type: Date,
-        default: null
-    }
+    checkOutTime: { type: Date, default: null }
 });
 
-// Create Model
 const EmployeeTracking = mongoose.model("EmployeeTracking", employeeTrackingSchema);
 
-// Export the model properly
 module.exports = EmployeeTracking;

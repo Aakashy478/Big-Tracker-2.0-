@@ -1,146 +1,307 @@
 const moment = require('moment');
 const EmployeeTracking = require('../Models/EmployeeTracking');
+const Employee = require('../Models/Employee');
+const { comparePassword } = require('../Utils/passwordUils');
+const { generateToken } = require('../Middlewares/authenticate');
+const { check } = require('express-validator');
+
+const login = async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        const user = await Employee.findOne({ username, isDisable: false });
+
+        if (!user) {
+            return res.status(404).json({ message: "Invailid username. Enter valid username." })
+        }
+
+        const isMatch = await comparePassword(password, user.password);
+
+        if (!isMatch) {
+            return res.status(404).json({ message: "Invailid password. Enter valid username." });
+        }
+
+        generateToken(user, res);
+        req.user = user;
+
+        res.status(200).json({ message: "Login successfully!" });
+    } catch (error) {
+        console.log("Error in login:- ", error.message);
+        return res.status(500).json({ message: "Something went wrong. Please try again later." });
+    }
+}
 
 const checkIn = async (req, res) => {
     try {
-        const { location } = req.body;
-        const employeeId = req.user._id;
+        const employeeId = req.user._id
+        const tracking = await EmployeeTracking.findOne({ employeeId, checkOutTime: null });
 
-        const existingTracking = await EmployeeTracking.findOne({ employeeId, checkOutTime: null });
-        console.log("existingTracking:- ", existingTracking);
-
-        if (existingTracking) {
-            return res.status(400).json({ success: true, message: "User is already check-in." });
+        if (tracking) {
+            return res.status(400).json({ message: "Employee is alrady checked in." })
         }
 
-        const newtracking = new EmployeeTracking({
+        const checkIn = moment().toDate();
+        const currentTime = moment(checkIn).format('hh:mm A');
+
+        const newEmployeeTracking = {
             employeeId,
-            checkInPlace: location
-        })
+            checkIn
+        }
 
-        const currentTime = moment().format('hh:mm A');
+        await EmployeeTracking.create(newEmployeeTracking);
 
-        await newtracking.save();
+        res.status(200).json({ message: `${currentTime} is your check-in time for the day.` })
+    } catch (error) {
+        console.log("Error in redering location page:- ", error.message);
+        res.status(500).json({ message: "Somthing went wrong. Please try again later." });
+    }
+}
 
-        console.log(`Your check-in time ${currentTime} start now`);
+const getLocation = async (req, res) => {
+    try {
+        const { checkInPlace } = req.body;
+        const employeeId = req.user._id;
 
-        res.status(200).json({ success: true, message: `Your check-in time ${currentTime} start now` })
+        const checkIn = await EmployeeTracking.findOne({ employeeId, checkOutTime: null });
+
+        if (!checkIn) {
+            return res.status(404).json({ message: "Employee not check-in. Please first check-in" });
+        }
+
+        if (checkIn.checkInPlace) {
+            return res.status(400).json({ message: "Your check-in location is already stored" });
+        }
+
+        await EmployeeTracking.updateOne(
+            { employeeId },
+            { $set: { checkInPlace } }
+        );
+
+        res.status(200).json({ message: "location submited successfully!" })
     } catch (error) {
         console.log("Error in Check-in:- ", error.message);
-        return res.status(500).json({ success: false, message: "Somthing went wrong. Please try again later." });
+        return res.status(500).json({ message: "Somthing went wrong. Please try again later." });
 
     }
 }
 
-const checkOut = async (req, res) => {
+
+const startVisit = async (req, res) => {
     try {
-        const employeeId = req.user._id;
-
-        const tracking = await EmployeeTracking.findOne({ employeeId });
-
-        if (!tracking) {
-            return res.status(400).json({ message: "User has not checked in." });
-        }
-
-        if (tracking.checkOutTime) {
-            return res.status(400).json({ message: "User has already checked out." });
-        }
-
-        const checkOutTime = new Date();
-
-        await EmployeeTracking.updateOne(
-            { _id: tracking._id },
-            { $set: { checkOutTime } }
-        );
-
-        console.log(`Your check-out time is ${checkOutTime} for the day.`);
-
-        res.status(200).json({ message: `Your check-out time is ${checkOutTime} for the day.` });
-    } catch (error) {
-        console.error("Error in check-out user:", error.message);
-        return res.status(500).json({ message: "Something went wrong. Please try again later." });
-    }
-};
-
-
-const doctorDetails = async (req, res) => {
-    try {
-        console.log(req.body);
-
         const { doctorName } = req.body;
-        const doctorImage = req.file ? req.file.filename : "";
+        const doctorImage = req.file ? req.file.filename : null;
 
-        const tracking = await EmployeeTracking.findOne({ employeeId: req.user._id, checkOutTime: null });
+        const checkIn = await EmployeeTracking.findOne({ employeeId: req.user._id, checkOutTime: null });
 
-        if (!tracking) {
-            return res.status(400).json({ message: "User has not checked in." });
+        console.log("checkIn:- ", checkIn);
+
+        if (!checkIn) {
+            return res.status(404).json({ message: "Employee has not checked in." });
         }
 
         // Create a new visit object
         const newVisit = {
             doctorName,
             doctorImage,
-            startLocation: "21.1702° N, 72.8311° E",
+            startLocation: "20.81° N, 72.81° E",
         };
 
-        // Push the new visit and save
-        tracking.visits.push(newVisit);
-        await tracking.save();
+        if (checkIn.visits.length === 0) {
+            checkIn.visits.push(newVisit);
+        } else {
+            const currentVisit = checkIn.visits.find(visit => visit.visitEndTime === null);
+            console.log("CurrectVisit:- ", currentVisit);
 
+            if (currentVisit) {
+                return res.status(400).json({ message: "Employee is already start visit" })
+            } else {
+                checkIn.visits.push(newVisit);
+            }
+        }
 
-        // Render the page and pass data
-        res.status(200).json({ message: "Submited doctor details successfully!" });
-
+        await checkIn.save();
+        res.status(200).json({ message: "Visit start successfully!" });
     } catch (error) {
         console.log("Error in Check-in:- ", error.message);
         return res.status(500).json({ message: "Something went wrong. Please try again later." });
     }
 };
 
-
+// Start Discussion
 const startDiscussion = async (req, res) => {
     try {
-        console.log(req.file);
         const tracking = await EmployeeTracking.findOne({ employeeId: req.user._id, checkOutTime: null });
 
+        console.log("tracking:- ", tracking);
         if (!tracking) {
-            return res.status(400).json({ message: "User has not checked in." });
+            return res.status(400).json({ message: "Employee tracker can't start .Please check in" });
         }
 
         if (tracking.visits.length === 0) {
-            return res.status(400).json({ message: "User can first start visit" });
+            return res.status(400).json({ message: "Employee can't start a discussion without starting a visit." });
         }
 
-        const currectVisit = tracking.visits.find(visit => visit.visitEndTime === null);
+        const activeVisit = tracking.visits.find(visit => visit.visitEndTime === null);
+        console.log("activeVisit:- ", activeVisit);
 
-        console.log("currectVisit:- ", currectVisit);
+        if (!activeVisit) {
+            return res.status(400).json({ message: "The employee is not currently on any visit.." });
+        }
 
-        const currectDiscussion = currectVisit.discussions.find(discussion => discussion.endTime === null);
+        const startTime = moment().toDate();
 
-        console.log("currectDiscussion:- ", currectDiscussion);
+        // Create a new Discussion
+        const newDiscussion = {
+            startTime,
+        }
 
-        currectDiscussion.audioFileUrl = req.file ? req.file.filename : null;
-        currectDiscussion.endTime = moment().toISOString();
+        if (activeVisit.discussions.length === 0) {
+            activeVisit.discussions.push(newDiscussion);
+        } else {
+            const currentDiscussion = activeVisit.discussions.find(discussion => discussion.endTime === null);
+            if (currentDiscussion) {
+                return res.status(400).json({ message: "Current discussion is running" });
+            } else {
+                activeVisit.discussions.push(newDiscussion);
+            }
+        }
 
         await tracking.save();
 
-        res.status(200).json({ message: "audio sended successfully" });
+        res.status(200).json({ message: "Discussion started successfully!" });
     } catch (error) {
         console.log("Erroor in startDiscussion:- ", error.message);
         return res.status(500).json({ message: "Somthing went wrong. Please try again later" });
     }
 }
 
+
+// Over Discussion
 const overDiscussion = async (req, res) => {
     try {
-        console.log(req.body);
-        
+        const employeeId = req.user._id
+        const { notes } = req.body;
+        const audioFile = req.file ? req.file.filename : null;
+
+        const checkIn = await EmployeeTracking.findOne({ employeeId, checkOutTime: null });
+
+        if (!checkIn) {
+            return res.status(400).json({ message: "Employee tracker can't start .Please check in" });
+        }
+
+        if (checkIn.visits.length === 0) {
+            return res.status(400).json({ message: "Employee can't start a discussion without starting a visit." });
+        }
+
+        const activeVisit = checkIn.visits.find(visit => visit.visitEndTime === null);
+        console.log("activeVisit:- ", activeVisit);
+
+        if (!activeVisit) {
+            return res.status(400).json({ message: "The employee is not currently on any visit.." });
+        }
+
+
+        if (activeVisit.discussions.length === 0) {
+            return res.status(400).json({ message: "No discussions found for the current visit." });
+        }
+
+        const currentDiscussion = activeVisit.discussions.find(discussion => discussion.endTime === null);
+
+        console.log("currentDiscussion:- ", currentDiscussion);
+
+
+        if (!currentDiscussion) {
+            return res.status(400).json({ message: "No discussion in running" });
+        }
+        const endTime = moment().toDate();
+
+        // Over Discussion
+        currentDiscussion.audioFile = audioFile;
+        currentDiscussion.notes = notes;
+        currentDiscussion.endTime = endTime;
+
+        await checkIn.save();
+
+
         res.status(200).json({ message: "Discussion overed successfully!" });
     } catch (error) {
-        console.log("Erroor in startDiscussion:- ", error.message);
+        console.log("Erroor in overDiscussion:- ", error.message);
         return res.status(500).json({ message: "Somthing went wrong. Please try again later" });
     }
 }
 
 
-module.exports = { checkIn, doctorDetails, checkOut, startDiscussion, overDiscussion };
+// Over Visit
+const overVisit = async (req, res) => {
+    try {
+        const employeeId = req.user._id;
+        const checkIn = await EmployeeTracking.findOne({ employeeId, checkOutTime: null });
+
+        if (!checkIn) {
+            return res.status(400).json({ message: "Employee tracker can't start .Please check in" });
+        }
+
+        if (checkIn.visits.length === 0) {
+            return res.status(400).json({ message: "Employee can't start a discussion without starting a visit." });
+        }
+
+        const activeVisit = checkIn.visits.find(visit => visit.visitEndTime === null);
+
+        console.log("activeVisit:- ", activeVisit);
+
+        if (!activeVisit) {
+            return res.status(400).json({ message: "The employee is not currently on any visit.." });
+        }
+
+        activeVisit.visitEndTime = moment().toDate();
+        activeVisit.endLocation = "21.2049° N, 72.8411° E";
+
+        await checkIn.save();
+
+        res.status(200).json({ message: "Visit over successfully!" });
+    } catch (error) {
+        console.log("Error in overVisit:- ", error.message);
+        return res.status(500).json({ message: "Something went wrong. Please try again later" });
+    }
+}
+
+// Check-out
+const checkOut = async (req, res) => {
+    try {
+        const employeeId = req.user._id;
+
+        const checkIn = await EmployeeTracking.findOne({ employeeId, checkOutTime: null });
+
+        if (!checkIn) {
+            return res.status(400).json({ message: "Employee has not checked in." });
+        }
+
+        const checkOutTime = moment().toDate();
+        const currentTime = moment(checkOutTime).format('hh:mm A');
+
+        await EmployeeTracking.updateOne(
+            { _id: checkIn._id },
+            { $set: { checkOutTime } }
+        );
+
+        res.status(200).json({ message: `Your check-out time is ${currentTime} for the day.` });
+    } catch (error) {
+        console.error("Error in check-out user:", error.message);
+        return res.status(500).json({ message: "Something went wrong. Please try again later." });
+    }
+};
+
+// Logout
+const logout = async (req, res) => {
+    try {
+        // Clear the authentication token from cookies
+        res.clearCookie("authToken");
+
+        res.status(200).json({ message: "Logout successfully!" });
+    } catch (error) {
+        console.error("Logout Error:", error.message);
+        res.status(500).json({ message: "Something went wrong. Try again later." });
+    }
+};
+
+module.exports = { login, checkIn, getLocation, startVisit, startDiscussion, overDiscussion, overVisit, checkOut, logout };

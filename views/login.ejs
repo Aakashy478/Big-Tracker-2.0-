@@ -98,13 +98,13 @@
                 });
 
                 const result = await response.json();
+                console.log(result);
+                
                 if (response.ok) {
                     alert("Login successfully");
-
-                    if (result.role === "user") {
-                        window.location.href = '/api/user/home';
-                    }else if(result.role === "admin"){
-                        window.location.href = '/Admin';
+                    
+                    if (result.role === "admin") {
+                        window.location.href = '/api/admin/home';
                     }
                 } else {
                     alert(result.data || result.message || 'Invalid login credentials')
