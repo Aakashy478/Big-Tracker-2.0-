@@ -79,7 +79,7 @@ const deleteEmployee = async (req, res) => {
 
 const getVisits = async (req, res) => {
     try {
-        const { username } = req.query;  // Get the username from the query parameters
+        const { username } = req.query;
 
         if (!username) {
             return res.status(400).json({ error: 'Username is required' });
@@ -92,21 +92,41 @@ const getVisits = async (req, res) => {
         }
 
         // Fetch the visits using the username and populate the 'employeeId' field
-        const visits = await EmployeeTracking.findOne({ employeeId: user._id }).populate('visits');
+        const tracker = await EmployeeTracking.find({ employeeId: user._id});
 
-        console.log(visits);
+        console.log(tracker);
 
-        if (!visits) {
-            return res.status(404).json({ error: 'No visits found for this username' });
-        }
-
-        return res.json(visits.visits);
+        return res.status(200).json(tracker);
     } catch (error) {
         console.error("Error in getVisits:- ", error.message);
-        res.status(500).json({ message: "Something went wrong. Try again later." });
+        res.status(500).json({ message: "Something went wrong. Please again later." });
     }
 }
 
+// Get visit Details
+// Get visit details
+const getVisitDetails = async (req, res) => {
+    try {
+        const id = req.query.visitId;
+
+        if (!id) {
+            return res.status(400).json({ message: "visitId is required" });
+        }
+
+        const tracker = await EmployeeTracking.findById(id);
+
+        if (!tracker) {
+            return res.status(404).json({ message: "Tracking record not found" });
+        }
+
+        // Send the visits array
+        return res.status(200).json(tracker.visits);
+
+    } catch (error) {
+        console.error("Error in Get visit details: ", error.message);
+        return res.status(500).json({ message: "Something went wrong. Please try again later" });
+    }
+};
 
 // Logout
 const logout = async (req, res) => {
@@ -121,4 +141,4 @@ const logout = async (req, res) => {
     }
 };
 
-module.exports = { addEmployee, login, deleteEmployee, getVisits, logout };
+module.exports = { addEmployee, login, deleteEmployee, getVisits, getVisitDetails, logout };

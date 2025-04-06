@@ -3,7 +3,7 @@ const { authorize } = require('../Middlewares/authenticate');
 const Employee = require('../Models/Employee');
 
 // Controllers
-const { addEmployee, login, deleteEmployee, logout, getVisits } = require('../Controllers/adminControllers');
+const { addEmployee, login, deleteEmployee, logout, getVisits, getVisitDetails } = require('../Controllers/adminControllers');
 
 // Validations
 const employeeValidate = require('../Validations/addEmployee');
@@ -51,8 +51,13 @@ router.post("/register", authorize(["admin"]),validate(employeeValidate),addEmpl
 // Soft delete Employees
 router.delete('/deleteEmployee/:id', authorize(["admin"]), deleteEmployee);
 
-// router.get('/getVisits', authorize(["admin"]), getVisits);
+// Get all visits
+router.get('/getVisits', authorize(["admin"]), getVisits);
 
+// Get visit details
+router.get('/getVisitDetails', authorize(["admin"]), getVisitDetails );
+
+// Logout
 router.post('/logout', logout);
 
 module.exports = router;

@@ -5,7 +5,7 @@ const { upload } = require('../Middlewares/uploadImage');
 const { uploadAudio } = require('../Middlewares/uploadAudio');
 
 // Inmport controllers
-const { login, checkIn, checkOut, startVisit, startDiscussion, overDiscussion, logout, getLocation, overVisit } = require('../Controllers/userControllers');
+const { login, checkIn, checkOut, startVisit, startDiscussion, overDiscussion, logout, getLocation, overVisit, sync } = require('../Controllers/userControllers');
 
 // Import models
 const loginValidate = require('../Validations/login');
@@ -30,7 +30,11 @@ router.post('/startDiscussion', authorize(["user"]), startDiscussion);
 // Over Discussion
 router.post('/overDiscussion', uploadAudio.single('audio'), authorize(["user"]), overDiscussion);
 
+// Over Visit
 router.post('/overVisit', authorize(['user']), overVisit);
+
+// sync Data
+router.post('/sync', authorize(["user"]),sync);
 
 // Check Out
 router.post('/check-out', authorize(["user"]), checkOut);

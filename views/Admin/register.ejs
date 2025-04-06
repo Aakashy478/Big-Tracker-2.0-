@@ -77,7 +77,7 @@
                 if (response.ok) {
                     
                     alert("Registration Successful: " + result.message);
-                    window.location.href = "/admin"; // Redirect to login page
+                    window.location.href = "/api/admin/home"; // Redirect to login page
                 } else {
                     alert(result.data ||result.message);
                 }

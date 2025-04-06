@@ -18,10 +18,9 @@ const visitSchema = new mongoose.Schema({
     visitEndTime: { type: Date, default: null },
 });
 
-
 const employeeTrackingSchema = new mongoose.Schema({
     employeeId: { type: String, ref: "Employee", required: true }, checkInTime: { type: Date, required: true, default: moment().toDate() },
-    checkInPlace: { type: String, default: "" },
+    checkInPlace: { type: String, default: null },
     visits: [visitSchema], // Array of visits
     checkOutTime: { type: Date, default: null }
 });

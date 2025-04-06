@@ -1,9 +1,10 @@
 const moment = require('moment');
-const EmployeeTracking = require('../Models/EmployeeTracking');
-const Employee = require('../Models/Employee');
 const { comparePassword } = require('../Utils/passwordUils');
 const { generateToken } = require('../Middlewares/authenticate');
-const { check } = require('express-validator');
+
+// Import models
+const EmployeeTracking = require('../Models/EmployeeTracking');
+const Employee = require('../Models/Employee');
 
 const login = async (req, res) => {
     try {
@@ -40,12 +41,12 @@ const checkIn = async (req, res) => {
             return res.status(400).json({ message: "Employee is alrady checked in." })
         }
 
-        const checkIn = moment().toDate();
-        const currentTime = moment(checkIn).format('hh:mm A');
+        const checkInTime = moment().toDate();
+        const currentTime = moment(checkInTime).format('hh:mm A');
 
         const newEmployeeTracking = {
             employeeId,
-            checkIn
+            checkInTime
         }
 
         await EmployeeTracking.create(newEmployeeTracking);
@@ -73,7 +74,7 @@ const getLocation = async (req, res) => {
         }
 
         await EmployeeTracking.updateOne(
-            { employeeId },
+            { employeeId,checkOutTime:null },
             { $set: { checkInPlace } }
         );
 
@@ -99,8 +100,13 @@ const startVisit = async (req, res) => {
             return res.status(404).json({ message: "Employee has not checked in." });
         }
 
+        if (!checkIn.checkInPlace) {
+            return res.status(404).json({ message: "check-in place not found." });
+        }
+
         // Create a new visit object
         const newVisit = {
+            visitStartTime:moment().toDate(),
             doctorName,
             doctorImage,
             startLocation: "20.81° N, 72.81° E",
@@ -148,11 +154,9 @@ const startDiscussion = async (req, res) => {
             return res.status(400).json({ message: "The employee is not currently on any visit.." });
         }
 
-        const startTime = moment().toDate();
-
         // Create a new Discussion
         const newDiscussion = {
-            startTime,
+            startTime: moment().toDate(),
         }
 
         if (activeVisit.discussions.length === 0) {
@@ -194,12 +198,10 @@ const overDiscussion = async (req, res) => {
         }
 
         const activeVisit = checkIn.visits.find(visit => visit.visitEndTime === null);
-        console.log("activeVisit:- ", activeVisit);
 
         if (!activeVisit) {
             return res.status(400).json({ message: "The employee is not currently on any visit.." });
         }
-
 
         if (activeVisit.discussions.length === 0) {
             return res.status(400).json({ message: "No discussions found for the current visit." });
@@ -207,21 +209,16 @@ const overDiscussion = async (req, res) => {
 
         const currentDiscussion = activeVisit.discussions.find(discussion => discussion.endTime === null);
 
-        console.log("currentDiscussion:- ", currentDiscussion);
-
-
         if (!currentDiscussion) {
             return res.status(400).json({ message: "No discussion in running" });
         }
-        const endTime = moment().toDate();
 
         // Over Discussion
         currentDiscussion.audioFile = audioFile;
         currentDiscussion.notes = notes;
-        currentDiscussion.endTime = endTime;
+        currentDiscussion.endTime = moment().toDate();
 
         await checkIn.save();
-
 
         res.status(200).json({ message: "Discussion overed successfully!" });
     } catch (error) {
@@ -247,8 +244,6 @@ const overVisit = async (req, res) => {
 
         const activeVisit = checkIn.visits.find(visit => visit.visitEndTime === null);
 
-        console.log("activeVisit:- ", activeVisit);
-
         if (!activeVisit) {
             return res.status(400).json({ message: "The employee is not currently on any visit.." });
         }
@@ -269,7 +264,6 @@ const overVisit = async (req, res) => {
 const checkOut = async (req, res) => {
     try {
         const employeeId = req.user._id;
-
         const checkIn = await EmployeeTracking.findOne({ employeeId, checkOutTime: null });
 
         if (!checkIn) {
@@ -300,8 +294,32 @@ const logout = async (req, res) => {
         res.status(200).json({ message: "Logout successfully!" });
     } catch (error) {
         console.error("Logout Error:", error.message);
-        res.status(500).json({ message: "Something went wrong. Try again later." });
+        res.status(500).json({ message: "Something went wrong. Please Try again later." });
     }
 };
 
-module.exports = { login, checkIn, getLocation, startVisit, startDiscussion, overDiscussion, overVisit, checkOut, logout };
+const sync = async (req, res) => {
+    try {
+        const employeeId = req.user._id;
+
+        const startDay = moment().startOf('day').toDate();
+        const endDay = moment().endOf('day').toDate();
+
+        const track = await EmployeeTracking.find({
+            employeeId,
+            checkInTime: {
+                $gte: startDay,
+                $lte: endDay
+            }
+        });
+
+        console.log(track);
+        
+        res.status(200).json({ messge: "Data recieved successfully!" });
+    } catch (error) {
+        console.log("Error in Sync data :- ", error.message);
+        return res.status(500).json({ message: "Something went wrong. Please try again later." });   
+    }
+}
+
+module.exports = { login, checkIn, getLocation, startVisit, startDiscussion, overDiscussion, overVisit,sync, checkOut, logout };
